@@ -14,7 +14,11 @@ def read_root():
 
 @app.get("/ws/manager/start")
 async def start_ws_manager():
-    await main()
+    print('Получена команда запуска')
+    # await main()
+    asyncio.create_task(main())
+    print('Запуск ws-manager...')
+    return {"message": "Запуск команды начат"}
 
 
 @app.get("/ws/conn/new_account/{acc_pk}")
@@ -37,4 +41,5 @@ async def conn_to_new_account(acc_pk: int):  # Action update account
 if __name__ == "__main__":
     import uvicorn
 
+    print("Uvicorn awake...")
     uvicorn.run(app, host="0.0.0.0", port=8008)
