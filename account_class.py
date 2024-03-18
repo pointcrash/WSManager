@@ -3,6 +3,7 @@ from db import get_service_name
 
 class Account:
     def __init__(self, data):
+        self.id = data['id']
         self.name = data['name']
         self.service_id = data['service_id']
         self.key = data['API_TOKEN']

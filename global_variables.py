@@ -1,9 +1,11 @@
 
 
 
+TASK_DICT = dict()
 active_connections = dict()
 active_servers = dict()
 binance_managers = dict()
+binance_clients = dict()
 # binance_clients = dict()
 bybit_ws_private = dict()
 bybit_ws_public = []

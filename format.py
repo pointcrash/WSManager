@@ -6,7 +6,7 @@ from global_variables import accounts_names, bybit_interval_list, binance_interv
 
 
 async def get_account(pk):
-    return Account(await fetch_accounts(pk))
+    return Account((await fetch_accounts(pk))[0])
 
 
 async def get_accounts():
@@ -32,7 +32,8 @@ def format_binance_position_message(msg):
             'symbol': p['s'],
             'qty': p['pa'],
             'entryPrice': p['ep'],
-            'unProfit': p['up'],
+            'unrealisedPnl': p['up'],
+            'realisedPnl': p['cr'],
             'side': p['ps'],
         }
         formatted_msg_list.append(formatted_message)
@@ -61,7 +62,8 @@ def format_bybit_position_message(msg):
         'symbol': msg['symbol'],
         'qty': msg['size'],
         'entryPrice': msg['entryPrice'],
-        'unProfit': msg['unrealisedPnl'],
+        'unrealisedPnl': msg['unrealisedPnl'],
+        'realisedPnl': msg['curRealisedPnl'],
         'side': 'LONG' if msg['side'] == 'Buy' else 'SHORT',
     }
     return formatted_message
@@ -72,7 +74,7 @@ def format_bybit_order_message(msg):
         'topic': 'order',
         'symbol': msg['symbol'],
         'orderId': msg['orderId'],
-        'side': msg['side'],
+        'side': msg['side'].upper(),
         'qty': msg['qty'],
         'avgPrice': msg['price'],
         'status': msg['orderStatus'],

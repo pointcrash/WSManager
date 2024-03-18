@@ -4,12 +4,23 @@ import asyncpg
 from asyncpg import Connection
 
 
+# async def connect_to_db():
+#     conn: Connection = await asyncpg.connect(
+#         user="admin",
+#         password="74976",
+#         database="BTC_USDT_bot_db",
+#         host="localhost",
+#         port="5432",
+#     )
+#     return conn
+
+
 async def connect_to_db():
     conn: Connection = await asyncpg.connect(
         user="admin",
-        password="74976",
-        database="BTC_USDT_bot_db",
-        host="localhost",
+        password="lksd23GBKwed.",
+        database="MyDB",
+        host="db",
         port="5432",
     )
     return conn
@@ -45,7 +56,6 @@ async def get_service_name(pk):
         return service[0]['name']
     except Exception as e:
         pass
-
 
 # Запуск асинхронного приложения
 

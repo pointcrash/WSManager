@@ -1,7 +1,7 @@
 from binance import AsyncClient, BinanceSocketManager
 
 from format import format_binance_position_message, format_binance_order_message, format_kline_interval_to_numbers
-from global_variables import binance_managers, queue_dict
+from global_variables import binance_managers, queue_dict, binance_clients
 
 
 # api_key = '40804baa38ed8e089157f32bee8c2311b0745b611b1dfb65ddfeda95af7f3b6b'
@@ -11,6 +11,7 @@ from global_variables import binance_managers, queue_dict
 async def connect_to_binance_client(account):
     client = await AsyncClient.create(api_key=account.key, api_secret=account.secret, testnet=account.testnet)
     bm = BinanceSocketManager(client)
+    binance_clients[account.name] = client
     binance_managers[account.name] = bm
     return bm
 
