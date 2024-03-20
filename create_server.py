@@ -1,5 +1,6 @@
 import asyncio
 import websockets
+import logging
 
 from ciclic_queue import CyclicQueue
 from conn_to_binance import *
@@ -11,7 +12,7 @@ from global_variables import active_connections, queue_dict, accounts_names, TAS
 async def sub_to_kline(acc_name, service, symbol, interval):
     if service == 'ByBit':
         _queue = queue_dict[acc_name]
-        bybit_sub_to_kline(interval, symbol, _queue)
+        bybit_sub_to_kline(acc_name, interval, symbol, _queue)
 
     elif service == 'Binance':
         interval = format_kline_interval_to_binance(interval)
@@ -25,7 +26,7 @@ async def sub_to_mark_price(acc_name, service, symbol):
     if service == 'ByBit':
         _queue = CyclicQueue(maxsize=1)
         task = asyncio.create_task(bybit_mark_price_sender(acc_name, _queue))
-        bybit_sub_to_mp(symbol, _queue)
+        bybit_sub_to_mp(acc_name, symbol, _queue)
 
     elif service == 'Binance':
         task = asyncio.create_task(sub_to_binance_market_price_topik(acc_name, symbol))
@@ -34,6 +35,7 @@ async def sub_to_mark_price(acc_name, service, symbol):
 
 async def conn_handler(websocket, path):
     print("Client connected")
+    logging.info("Client connected")
     acc_name = None
     service = None
     tasks = list()
@@ -79,6 +81,7 @@ async def conn_handler(websocket, path):
 
     except websockets.exceptions.ConnectionClosedError:
         print("Error - Client disconnected")
+        logging.info("Client disconnected")
     except Exception as e:
         print(e)
     finally:
@@ -87,12 +90,13 @@ async def conn_handler(websocket, path):
         for task in tasks:
             task.cancel()
         for sub in bybit_subs:
-            unsub_from_topic(sub)
+            unsub_from_topic(acc_name, sub)
         print("Connection closed")
 
 
 async def binance_sender(acc_name, _queue):
     print(f"Sender '{acc_name}' started")
+    logging.info(f"Sender '{acc_name}' started")
     while True:
         data = await _queue.get()
         # print(f"'{acc_name}' sending data:", data)
@@ -107,6 +111,7 @@ async def binance_sender(acc_name, _queue):
 
 async def bybit_sender(acc_name, _queue):
     print(f"Sender '{acc_name}' started")
+    logging.info(f"Sender '{acc_name}' started")
     while True:
         if _queue.qsize() > 0:
             data = _queue.get_nowait()
@@ -124,6 +129,7 @@ async def bybit_sender(acc_name, _queue):
 
 async def bybit_mark_price_sender(acc_name, _queue):
     print(f"Sender '{acc_name}' started")
+    logging.info(f"Sender '{acc_name}' started")
     while True:
         if _queue.qsize() > 0:
             data = _queue.get_nowait()
@@ -175,6 +181,7 @@ async def new_connect(account):
         TASK_DICT[account].append(task_start_binance_sender)
 
     elif service_name == 'ByBit':
+        conn_to_bybit_public(account)
         task_start_bybit_sender = asyncio.create_task(bybit_sender(account.name, _queue))
         conn_to_bybit_private(account)
         bybit_sub_to_position_stream(account.name)
@@ -200,8 +207,8 @@ async def close_connection(account):
 
 async def main():
     if not len(TASK_DICT):
+        logging.basicConfig(level=logging.INFO)
         task_start_server = asyncio.create_task(start_server())
-        conn_to_bybit_public()
         accounts = await get_accounts()
 
         for account in accounts.values():

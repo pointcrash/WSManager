@@ -8,7 +8,7 @@ binance_managers = dict()
 binance_clients = dict()
 # binance_clients = dict()
 bybit_ws_private = dict()
-bybit_ws_public = []
+bybit_ws_public = dict()
 queue_dict = dict()
 accounts_names = []
 

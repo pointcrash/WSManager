@@ -15,7 +15,6 @@ def read_root():
 @app.get("/ws/manager/start")
 async def start_ws_manager():
     print('Получена команда запуска')
-    # await main()
     asyncio.create_task(main())
     print('Запуск ws-manager...')
     return {"message": "Запуск команды начат"}

@@ -13,15 +13,14 @@ from global_variables import bybit_ws_private, bybit_ws_public, queue_dict
 # symbol = 'BTCUSDT'
 
 
-def conn_to_bybit_public():
-    if not len(bybit_ws_public):
-        ws_public = WebSocket(
-            # trace_logging=True,
-            testnet=True,
-            channel_type="linear",
-        )
+def conn_to_bybit_public(account):
+    ws_public = WebSocket(
+        # trace_logging=True,
+        testnet=account.testnet,
+        channel_type="linear",
+    )
 
-        bybit_ws_public.append(ws_public)
+    bybit_ws_public[account.name] = ws_public
 
 
 def position_handler_wrapper(_queue):
@@ -82,9 +81,9 @@ def conn_to_bybit_private(account):
     bybit_ws_private[account.name] = ws_private
 
 
-def unsub_from_topic(splitted_topic):
+def unsub_from_topic(account_name, splitted_topic):
     topic = '.'.join(splitted_topic)
-    ws_public = bybit_ws_public[0]
+    ws_public = bybit_ws_public[account_name]
 
     for req_id, data in list(ws_public.subscriptions.items()):
         data = json.loads(data)
@@ -95,13 +94,13 @@ def unsub_from_topic(splitted_topic):
             ws_public.ws.send(json.dumps(unsubscribe_message))
 
 
-def bybit_sub_to_mp(symbol, _queue):
-    ws_public = bybit_ws_public[0]
+def bybit_sub_to_mp(account_name, symbol, _queue):
+    ws_public = bybit_ws_public[account_name]
     ws_public.ticker_stream(symbol=symbol, callback=mark_price_handler_wrapper(_queue, symbol))
 
 
-def bybit_sub_to_kline(interval, symbol, _queue):
-    ws_public = bybit_ws_public[0]
+def bybit_sub_to_kline(account_name, interval, symbol, _queue):
+    ws_public = bybit_ws_public[account_name]
     ws_public.kline_stream(interval=interval, symbol=symbol, callback=kline_handler_wrapper(_queue, symbol))
 
 
