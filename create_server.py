@@ -141,7 +141,7 @@ async def bybit_mark_price_sender(acc_name, _queue):
 
 
 async def start_server():
-    server = await websockets.serve(conn_handler, "localhost", 8765)
+    server = await websockets.serve(conn_handler, "0.0.0.0", 8765)
     await server.wait_closed()
 
 
