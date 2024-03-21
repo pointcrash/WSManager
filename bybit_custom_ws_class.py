@@ -1,6 +1,5 @@
 from pybit.unified_trading import WebSocket
 
-
 '''Расширяем класс вебсокета из библиотеки для обработки
                                         сообщений об отписке'''
 
@@ -26,8 +25,8 @@ class ByBitCustomWebSocket(WebSocket):
     def _handle_incoming_message(self, message):
         def is_auth_message():
             if (
-                message.get("op") == "auth"
-                or message.get("type") == "AUTH_RESP"
+                    message.get("op") == "auth"
+                    or message.get("type") == "AUTH_RESP"
             ):
                 return True
             else:
@@ -35,8 +34,8 @@ class ByBitCustomWebSocket(WebSocket):
 
         def is_subscription_message():
             if (
-                message.get("op") == "subscribe"
-                or message.get("type") == "COMMAND_RESP"
+                    message.get("op") == "subscribe"
+                    or message.get("type") == "COMMAND_RESP"
             ):
                 return True
             else:
@@ -53,6 +52,6 @@ class ByBitCustomWebSocket(WebSocket):
         elif is_subscription_message():
             self._process_subscription_message(message)
         elif is_unsubscribe_message():
-            self._process_unsubscription_message(message)
+            self._process_unsubscribe_message(message)
         else:
             self._process_normal_message(message)
