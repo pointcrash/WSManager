@@ -1,9 +1,11 @@
 import json
+import logging
 import time
 from uuid import uuid4
 
 from pybit.unified_trading import WebSocket
 
+from bybit_custom_ws_class import ByBitCustomWebSocket
 from format import format_bybit_order_message, format_bybit_position_message
 from global_variables import bybit_ws_private, bybit_ws_public, queue_dict
 
@@ -14,7 +16,7 @@ from global_variables import bybit_ws_private, bybit_ws_public, queue_dict
 
 
 def conn_to_bybit_public(account):
-    ws_public = WebSocket(
+    ws_public = ByBitCustomWebSocket(
         # trace_logging=True,
         testnet=account.testnet,
         channel_type="linear",
@@ -89,7 +91,7 @@ def unsub_from_topic(account_name, splitted_topic):
         data = json.loads(data)
         if data['args'][0] == topic:
             # req_id = str(uuid4())
-            ws_public.unsub_topics[req_id] = topic
+            ws_public.unsubscribe_topics[req_id] = topic
             unsubscribe_message = {"op": "unsubscribe", "req_id": req_id, "args": [topic]}
             ws_public.ws.send(json.dumps(unsubscribe_message))
 
