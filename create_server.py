@@ -6,7 +6,7 @@ from ciclic_queue import CyclicQueue
 from conn_to_binance import *
 from conn_to_bybit import *
 from format import get_accounts, get_account, format_kline_interval_to_binance
-from global_variables import active_connections, queue_dict, accounts_names, TASK_DICT
+from global_variables import active_connections, queue_dict, account_names, TASK_DICT
 
 
 async def sub_to_kline(acc_name, service, symbol, interval):
@@ -48,7 +48,7 @@ async def conn_handler(websocket, path):
             if message['title'] == 'conn':
                 acc_name = message['account']
 
-                if acc_name in accounts_names:
+                if acc_name in account_names:
                     if not active_connections.get(acc_name):
                         active_connections[acc_name] = set()
                     active_connections[acc_name].add(websocket)
@@ -153,6 +153,8 @@ async def start_server():
 
 async def add_new_account(acc_pk):
     account = await get_account(acc_pk)
+    if account.name not in account_names:
+        account_names.append(account.name)
     await new_connect(account)
 
 

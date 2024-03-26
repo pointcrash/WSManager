@@ -2,7 +2,7 @@ import asyncio
 
 from account_class import Account
 from db import fetch_accounts
-from global_variables import accounts_names, bybit_interval_list, binance_interval_list
+from global_variables import account_names, bybit_interval_list, binance_interval_list
 
 
 async def get_account(pk):
@@ -13,7 +13,7 @@ async def get_accounts():
     accounts = await fetch_accounts()
     formatted_data = dict()
     for account in accounts:
-        accounts_names.append(account['name'])
+        account_names.append(account['name'])
         formatted_data[account['name']] = Account(account)
     return formatted_data
 
