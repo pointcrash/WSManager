@@ -45,7 +45,8 @@ def format_binance_order_message(msg):
     formatted_message = {
         'topic': 'order',
         'symbol': msg['s'],
-        'orderId': msg['c'],
+        'orderId': msg['i'],
+        'clientOrderId': msg['c'],
         'side': msg['S'],
         'qty': msg['q'],
         'avgPrice': msg['ap'],
@@ -83,6 +84,7 @@ def format_bybit_order_message(msg):
         'topic': 'order',
         'symbol': msg['symbol'],
         'orderId': msg['orderId'],
+        'clientOrderId': msg['orderLinkId'],
         'side': msg['side'].upper(),
         'qty': msg['qty'],
         'avgPrice': msg['price'],
