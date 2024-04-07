@@ -67,7 +67,6 @@ def format_bybit_position_message(msg):
         'entryPrice': msg['entryPrice'],
         'unrealisedPnl': msg['unrealisedPnl'],
         'realisedPnl': msg['curRealisedPnl'],
-        # 'side': 'LONG' if msg['side'] == 'Buy' else 'SHORT',
     }
     if msg['side'] == 'Buy':
         formatted_message['side'] = 'LONG'
@@ -90,7 +89,7 @@ def format_bybit_order_message(msg):
         'avgPrice': msg['price'],
         'triggerPrice': msg['triggerPrice'],
         'triggerDirection': msg['triggerDirection'],
-        'status': msg['orderStatus'],
+        'status': msg['orderStatus'].upper(),
         'psnSide': 'LONG' if msg['positionIdx'] == 1 else 'SHORT',
         'reduceOnly': msg['reduceOnly'],
     }
