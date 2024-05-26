@@ -69,9 +69,15 @@ def format_bybit_position_message(msg):
         'unrealisedPnl': msg['unrealisedPnl'],
         'realisedPnl': msg['curRealisedPnl'],
     }
-    if msg['side'] == 'Buy':
+
+    # if msg['side'] == 'Buy':
+    #     formatted_message['side'] = 'LONG'
+    # elif msg['side'] == 'Sell':
+    #     formatted_message['side'] = 'SHORT'
+
+    if msg['positionIdx'] == 1:
         formatted_message['side'] = 'LONG'
-    elif msg['side'] == 'Sell':
+    elif msg['positionIdx'] == 2:
         formatted_message['side'] = 'SHORT'
     else:
         formatted_message['side'] = ''
