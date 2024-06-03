@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 import time
 from uuid import uuid4
 
@@ -13,6 +14,7 @@ from global_variables import bybit_ws_private, bybit_ws_public, queue_dict
 # API_TOKEN = 'XlXhlUPG4GCBGRdFld'
 # SECRET_KEY = 'JBpwCjzkzXbxriLdptaoLyLR2wvdNSz0NisU'
 # symbol = 'BTCUSDT'
+bybit_ws_locker = threading.Lock()
 
 
 def conn_to_bybit_public(account):
@@ -67,20 +69,21 @@ def kline_handler_wrapper(_queue, symbol):
 
 
 def conn_to_bybit_private(account):
-    ws_private = WebSocket(
-        # trace_logging=True,
-        testnet=account.testnet,
-        channel_type="private",
-        api_key=account.key,
-        api_secret=account.secret,
-    )
+    with bybit_ws_locker:
+        ws_private = WebSocket(
+            # trace_logging=True,
+            testnet=account.testnet,
+            channel_type="private",
+            api_key=account.key,
+            api_secret=account.secret,
+        )
 
-    if ws_private.is_connected():
-        print(f"WebSocket '{account.name}' connected")
-    else:
-        print(f"WebSocket '{account.name}' connection error")
+        if ws_private.is_connected():
+            print(f"WebSocket '{account.name}' connected")
+        else:
+            print(f"WebSocket '{account.name}' connection error")
 
-    bybit_ws_private[account.name] = ws_private
+        bybit_ws_private[account.name] = ws_private
 
 
 def unsub_from_topic(account_name, splitted_topic):
