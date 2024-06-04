@@ -103,10 +103,8 @@ async def binance_sender(acc_id, acc_name, _queue):
         logging.info(f"Sender '{acc_name}' started")
         while True:
             data = await _queue.get()
-            logging.info(f"Data '{data}'")
-            logging.info(f"SAVE TO DB {await save_to_db(acc_id, data)}")
-            # await save_to_db(acc_id, json.dumps(data))
-            # print(f"'{acc_name}' sending data:", data)
+            # logging.info(f"Data '{data}'")
+            await save_to_db(acc_id, data)
 
             if active_connections.get(acc_name):
                 for websocket in active_connections[acc_name]:
@@ -126,10 +124,8 @@ async def bybit_sender(acc_id, acc_name, _queue):
         while True:
             if _queue.qsize() > 0:
                 data = _queue.get_nowait()
-                logging.info(f"Data '{data}'")
-                logging.info(f"SAVE TO DB {await save_to_db(acc_id, data)}")
-                # await save_to_db(acc_id, data)
-                # print(f"'{acc_name}' sending data:", data)
+                # logging.info(f"Data '{data}'")
+                await save_to_db(acc_id, data)
 
                 if active_connections.get(acc_name):
                     for websocket in active_connections[acc_name]:
