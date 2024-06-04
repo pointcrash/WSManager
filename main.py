@@ -1,6 +1,7 @@
 import asyncio
+import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from create_server import add_new_account, main, delete_account
 
@@ -32,9 +33,17 @@ async def conn_to_new_account(acc_pk: int):  # Action delete account
 
 @app.get("/ws/conn/update_account/{acc_pk}")
 async def conn_to_new_account(acc_pk: int):  # Action update account
-    await delete_account(acc_pk)
-    await asyncio.sleep(5)
-    await add_new_account(acc_pk)
+    try:
+        await delete_account(acc_pk)
+        # logging.info('account deleted')
+        await asyncio.sleep(5)
+#         logging.info('time slipped')
+        await add_new_account(acc_pk)
+#         logging.info('account added')
+        return {"status": "success", "message": f"Account {acc_pk} updated successfully"}
+    except Exception as e:
+        print(f"Error updating account {acc_pk}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error updating account {acc_pk}")
 
 
 if __name__ == "__main__":

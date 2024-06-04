@@ -9,7 +9,7 @@ from db import save_to_db, update_wsmanager_status, create_conn_account_to_db, a
 from format import get_accounts, get_account, format_kline_interval_to_binance
 from global_variables import active_connections, queue_dict, account_names, TASK_DICT, ws_ids
 
-ws_locker = threading.Lock()
+ws_locker = asyncio.Lock()
 
 
 async def sub_to_kline(acc_name, service, symbol, interval):
@@ -181,12 +181,15 @@ async def delete_account(acc_pk):
             if account.id == acc_pk:
                 return account
 
+    # logging.info('into delete account')
     account = await get_account_for_del()
+#     logging.info('acc goted')
     await close_connection(account)
+#     logging.info('conn closed')
 
 
 async def new_connect(account):
-    with ws_locker:
+    async with ws_locker:
         service_name = await account.service_name
         _queue = asyncio.Queue()
         queue_dict[account.name] = _queue
@@ -202,37 +205,52 @@ async def new_connect(account):
 
         elif service_name == 'ByBit':
             conn_to_bybit_public(account)
+#             logging.info('11 ')
             task_start_bybit_sender = asyncio.create_task(bybit_sender(account.id, account.name, _queue))
+#             logging.info('22 ')
             conn_to_bybit_private(account)
+#             logging.info('33 ')
             bybit_sub_to_position_stream(account.name)
+#             logging.info('44 ')
             bybit_sub_to_order_stream(account.name)
 
+#             logging.info('55 ')
             TASK_DICT[account].append(task_start_bybit_sender)
+#             logging.info('66 ')
 
         # Создаем объект в бд
+#         logging.info('12 closed')
         ws_id = await create_conn_account_to_db(account)
+#         logging.info('14 closed')
         await add_to_ws_ids_dict(ws_id, service_name, account)
 
 
 async def close_connection(account):
-    service_name = await account.service_name
-    tasks = TASK_DICT[account]
-    for task in tasks:
-        task.cancel()
+#     logging.info('11111')
+    async with ws_locker:
+#         logging.info('1')
+        service_name = await account.service_name
+#         logging.info('2')
+        tasks = TASK_DICT[account]
+#         logging.info('3')
+        for task in tasks:
+            task.cancel()
 
-    if service_name == 'Binance':
-        client = binance_clients[account.name]
-        await client.close_connection()
+#         logging.info('4')
+        if service_name == 'Binance':
+            client = binance_clients[account.name]
+            await client.close_connection()
 
-    elif service_name == 'ByBit':
-        client = bybit_ws_private[account.name]
-        client.exit()
+        elif service_name == 'ByBit':
+            client = bybit_ws_private[account.name]
+            client.exit()
+#         logging.info('5')
 
 
 async def ws_conn_check():
     while True:
-        with ws_locker:
-            with binance_ws_locker:
+        async with ws_locker:
+            async with binance_ws_locker:
                 for client in binance_clients.values():
                     try:
                         await client.get_server_time()
@@ -246,7 +264,7 @@ async def ws_conn_check():
                         ws_id = ws_ids[conn]
                         await update_wsmanager_status(ws_id, False)
 
-        time.sleep(10)
+        await asyncio.sleep(10)
 
 
 async def main():

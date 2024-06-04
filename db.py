@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import traceback
 
 import asyncpg
@@ -117,7 +118,9 @@ async def save_position(conn, acc_id, data):
 
 
 async def create_conn_account_to_db(account):
+    # logging.info('41 ')
     conn = await connect_to_db()
+#     logging.info('42 ')
     try:
         query = """
         INSERT INTO main_wsmanager (
@@ -126,12 +129,15 @@ async def create_conn_account_to_db(account):
             $1, $2, NOW(), NOW()
         )
         ON CONFLICT (account_id) 
-        DO NOTHING
+        DO UPDATE SET status = TRUE, time_update = NOW()
         RETURNING id
         """
+        # logging.info('43 ')
 
         values = (account.id, True)
+#         logging.info('44 ')
         ws_id = await conn.fetchval(query, *values)
+#         logging.info('45 ')
         return ws_id
     finally:
         await conn.close()
