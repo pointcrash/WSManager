@@ -256,7 +256,7 @@ async def ws_conn_check():
                     logging.info(e)
                     await update_wsmanager_status(ws_id, False, error=str(e))
 
-        for account in TASK_DICT:
+        for account in dict(TASK_DICT):
             # for conn in list(bybit_ws_private.values()):
             conn = bybit_ws_private.get(account.name)
             if conn:
