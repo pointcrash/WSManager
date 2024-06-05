@@ -3,8 +3,7 @@ import logging
 import threading
 import time
 from uuid import uuid4
-
-from pybit.unified_trading import WebSocket
+from pybit.unified_trading import WebSocket, HTTP
 
 from bybit_custom_ws_class import ByBitCustomWebSocket
 from format import format_bybit_order_message, format_bybit_position_message
@@ -14,7 +13,25 @@ from global_variables import bybit_ws_private, bybit_ws_public, queue_dict
 # API_TOKEN = 'XlXhlUPG4GCBGRdFld'
 # SECRET_KEY = 'JBpwCjzkzXbxriLdptaoLyLR2wvdNSz0NisU'
 # symbol = 'BTCUSDT'
-bybit_ws_locker = threading.Lock()
+
+
+def get_session(account):
+    session = HTTP(
+        testnet=account.testnet,
+        api_key=account.key,
+        api_secret=account.secret,
+    )
+
+    return session
+
+
+def bybit_api_check(account):
+    try:
+        session = get_session(account)
+        session.get_wallet_balance(accountType=account.account_type)
+        return True, ''
+    except Exception as e:
+        return False, str(e)
 
 
 def conn_to_bybit_public(account):
@@ -69,7 +86,9 @@ def kline_handler_wrapper(_queue, symbol):
 
 
 def conn_to_bybit_private(account):
-    with bybit_ws_locker:
+    try:
+        session = get_session(account)
+        session.get_wallet_balance(accountType=account.account_type)
         ws_private = WebSocket(
             # trace_logging=True,
             testnet=account.testnet,
@@ -79,11 +98,13 @@ def conn_to_bybit_private(account):
         )
 
         if ws_private.is_connected():
-            print(f"WebSocket '{account.name}' connected")
+            bybit_ws_private[account.name] = ws_private
+            return True, ''
         else:
-            print(f"WebSocket '{account.name}' connection error")
-
-        bybit_ws_private[account.name] = ws_private
+            return False, 'Not connected'
+    except Exception as e:
+        logging.info(f'{account.name} BYBIT CONN ERROR: {e}')
+        return False, str(e)
 
 
 def unsub_from_topic(account_name, splitted_topic):

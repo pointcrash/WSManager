@@ -9,7 +9,6 @@ from db import save_to_db, update_wsmanager_status, create_conn_account_to_db, a
 from format import get_accounts, get_account, format_kline_interval_to_binance
 from global_variables import active_connections, queue_dict, account_names, TASK_DICT, ws_ids
 
-ws_locker = asyncio.Lock()
 
 
 async def sub_to_kline(acc_name, service, symbol, interval):
@@ -183,86 +182,91 @@ async def delete_account(acc_pk):
 
     # logging.info('into delete account')
     account = await get_account_for_del()
-#     logging.info('acc goted')
+    # logging.info('acc goted')
     await close_connection(account)
-#     logging.info('conn closed')
+    # logging.info('conn closed')
 
 
 async def new_connect(account):
-    async with ws_locker:
-        service_name = await account.service_name
-        _queue = asyncio.Queue()
-        queue_dict[account.name] = _queue
-        TASK_DICT[account] = []
+    service_name = await account.service_name
+    _queue = asyncio.Queue()
+    queue_dict[account.name] = _queue
+    TASK_DICT[account] = []
 
-        if service_name == 'Binance':
-            task_start_binance_sender = asyncio.create_task(binance_sender(account.id, account.name, _queue))
-            await connect_to_binance_client(account)
-            task_sub_binance_user = asyncio.create_task(sub_to_binance_user_topik(account.name))
+    if service_name == 'Binance':
+        conn_status, err = await connect_to_binance_client(account)
+        if not conn_status:
+            ws_id = await create_conn_account_to_db(account, status=False, error=err)
+            await add_to_ws_ids_dict(ws_id, service_name, account)
+            return
+        task_start_binance_sender = asyncio.create_task(binance_sender(account.id, account.name, _queue))
+        task_sub_binance_user = asyncio.create_task(sub_to_binance_user_topik(account.name))
 
-            TASK_DICT[account].append(task_sub_binance_user)
-            TASK_DICT[account].append(task_start_binance_sender)
+        TASK_DICT[account].append(task_sub_binance_user)
+        TASK_DICT[account].append(task_start_binance_sender)
 
-        elif service_name == 'ByBit':
-            conn_to_bybit_public(account)
-#             logging.info('11 ')
-            task_start_bybit_sender = asyncio.create_task(bybit_sender(account.id, account.name, _queue))
-#             logging.info('22 ')
-            conn_to_bybit_private(account)
-#             logging.info('33 ')
-            bybit_sub_to_position_stream(account.name)
-#             logging.info('44 ')
-            bybit_sub_to_order_stream(account.name)
+    elif service_name == 'ByBit':
+        conn_status, err = conn_to_bybit_private(account)
+        if not conn_status:
+            ws_id = await create_conn_account_to_db(account, status=False, error=err)
+            await add_to_ws_ids_dict(ws_id, service_name, account)
+            return
+        conn_to_bybit_public(account)
+        task_start_bybit_sender = asyncio.create_task(bybit_sender(account.id, account.name, _queue))
+        bybit_sub_to_position_stream(account.name)
+        bybit_sub_to_order_stream(account.name)
+        TASK_DICT[account].append(task_start_bybit_sender)
 
-#             logging.info('55 ')
-            TASK_DICT[account].append(task_start_bybit_sender)
-#             logging.info('66 ')
-
-        # Создаем объект в бд
-#         logging.info('12 closed')
-        ws_id = await create_conn_account_to_db(account)
-#         logging.info('14 closed')
-        await add_to_ws_ids_dict(ws_id, service_name, account)
+    # Создаем объект в бд
+    ws_id = await create_conn_account_to_db(account, status=True)
+    await add_to_ws_ids_dict(ws_id, service_name, account)
 
 
 async def close_connection(account):
-#     logging.info('11111')
-    async with ws_locker:
-#         logging.info('1')
-        service_name = await account.service_name
-#         logging.info('2')
-        tasks = TASK_DICT[account]
-#         logging.info('3')
-        for task in tasks:
-            task.cancel()
+    service_name = await account.service_name
+    tasks = TASK_DICT[account]
+    for task in tasks:
+        task.cancel()
 
-#         logging.info('4')
-        if service_name == 'Binance':
-            client = binance_clients[account.name]
+    if service_name == 'Binance':
+        client = binance_clients.get(account.name)
+        if client:
             await client.close_connection()
 
-        elif service_name == 'ByBit':
-            client = bybit_ws_private[account.name]
+    elif service_name == 'ByBit':
+        client = bybit_ws_private.get(account.name)
+        if client:
             client.exit()
-#         logging.info('5')
 
 
 async def ws_conn_check():
     while True:
-        async with ws_locker:
-            async with binance_ws_locker:
-                for client in binance_clients.values():
-                    try:
-                        await client.get_server_time()
-                    except:
-                        ws_id = ws_ids[conn]
-                        await update_wsmanager_status(ws_id, False)
+        # logging.info(bybit_ws_private)
+        # logging.info(binance_clients)
+        # logging.info('')
+        for conn in list(binance_clients.values()):
+            ws_id = ws_ids[conn]
+            # logging.info(ws_id)
+            try:
+                await conn.get_order(orderId='111111111', symbol='BTCUSDT')
+            except Exception as e:
+                if 'APIError(code=-2026)' in str(e):
+                    await update_wsmanager_status(ws_id, True)
+                else:
+                    logging.info(e)
+                    await update_wsmanager_status(ws_id, False, error=str(e))
 
-            with bybit_ws_locker:
-                for conn in bybit_ws_private.values():
-                    if not conn.is_connected():
-                        ws_id = ws_ids[conn]
-                        await update_wsmanager_status(ws_id, False)
+        for account in TASK_DICT:
+            # for conn in list(bybit_ws_private.values()):
+            conn = bybit_ws_private.get(account.name)
+            if conn:
+                ws_id = ws_ids[conn]
+                # logging.info(ws_id)
+                status, err = bybit_api_check(account)
+                if status and conn.is_connected():
+                    await update_wsmanager_status(ws_id, True)
+                else:
+                    await update_wsmanager_status(ws_id, False, err)
 
         await asyncio.sleep(10)
 
@@ -270,12 +274,12 @@ async def ws_conn_check():
 async def main():
     if not len(TASK_DICT):
         logging.basicConfig(level=logging.INFO)
-        # task_start_server = asyncio.create_task(start_server())
-        # task_ws_conn_check = asyncio.create_task(ws_conn_check())
+        task_start_server = asyncio.create_task(start_server())
+        task_ws_conn_check = asyncio.create_task(ws_conn_check())
 
         # Запуск бесконечных функций
-        task_start_server = start_server()
-        task_ws_conn_check = ws_conn_check()
+        # task_start_server = start_server()
+        # task_ws_conn_check = ws_conn_check()
 
         accounts = await get_accounts()
 

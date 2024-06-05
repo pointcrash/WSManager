@@ -34,12 +34,13 @@ async def conn_to_new_account(acc_pk: int):  # Action delete account
 @app.get("/ws/conn/update_account/{acc_pk}")
 async def conn_to_new_account(acc_pk: int):  # Action update account
     try:
+        logging.info('account update')
         await delete_account(acc_pk)
-        # logging.info('account deleted')
+        logging.info('account deleted')
         await asyncio.sleep(5)
-#         logging.info('time slipped')
+        logging.info('time slipped')
         await add_new_account(acc_pk)
-#         logging.info('account added')
+        logging.info('account added')
         return {"status": "success", "message": f"Account {acc_pk} updated successfully"}
     except Exception as e:
         print(f"Error updating account {acc_pk}: {e}")

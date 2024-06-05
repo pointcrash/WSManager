@@ -117,27 +117,22 @@ async def save_position(conn, acc_id, data):
         await conn.close()
 
 
-async def create_conn_account_to_db(account):
-    # logging.info('41 ')
+async def create_conn_account_to_db(account, status, error=''):
     conn = await connect_to_db()
-#     logging.info('42 ')
     try:
         query = """
         INSERT INTO main_wsmanager (
-            account_id, status, time_create, time_update
+            account_id, status, error_text, time_create, time_update
         ) VALUES (
-            $1, $2, NOW(), NOW()
+            $1, $2, $3, NOW(), NOW()
         )
         ON CONFLICT (account_id) 
-        DO UPDATE SET status = TRUE, time_update = NOW()
+        DO UPDATE SET status = $2, error_text = $3, time_update = NOW()
         RETURNING id
         """
-        # logging.info('43 ')
 
-        values = (account.id, True)
-#         logging.info('44 ')
+        values = (account.id, status, error)
         ws_id = await conn.fetchval(query, *values)
-#         logging.info('45 ')
         return ws_id
     finally:
         await conn.close()
@@ -146,23 +141,23 @@ async def create_conn_account_to_db(account):
 async def add_to_ws_ids_dict(ws_id, service_name, account):
     conn = None
     if service_name == 'Binance':
-        conn = binance_clients[account.name]
+        conn = binance_clients.get(account.name)
     elif service_name == 'ByBit':
-        conn = bybit_ws_private[account.name]
+        conn = bybit_ws_private.get(account.name)
 
     if conn:
         ws_ids[conn] = ws_id
 
 
-async def update_wsmanager_status(ws_id, new_status):
+async def update_wsmanager_status(ws_id, new_status, error=''):
     conn = await connect_to_db()
     try:
         query = """
         UPDATE main_wsmanager
-        SET status = $1, time_update = NOW()
-        WHERE id = $2
+        SET status = $1, error_text = $2, time_update = NOW()
+        WHERE id = $3
         """
-        values = (new_status, ws_id)
+        values = (new_status, error, ws_id)
         await conn.execute(query, *values)
     finally:
         await conn.close()
