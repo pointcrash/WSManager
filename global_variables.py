@@ -1,5 +1,4 @@
-
-
+import threading
 
 TASK_DICT = dict()
 active_connections = dict()
@@ -9,6 +8,7 @@ binance_clients = dict()
 # binance_clients = dict()
 bybit_ws_private = dict()
 bybit_ws_public = dict()
+ws_ids = dict()
 queue_dict = dict()
 account_names = []
 

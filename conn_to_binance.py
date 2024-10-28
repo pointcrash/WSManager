@@ -1,3 +1,7 @@
+import asyncio
+import logging
+import threading
+
 from binance import AsyncClient, BinanceSocketManager
 
 from format import format_binance_position_message, format_binance_order_message, format_kline_interval_to_numbers
@@ -9,11 +13,19 @@ from global_variables import binance_managers, queue_dict, binance_clients
 
 
 async def connect_to_binance_client(account):
-    client = await AsyncClient.create(api_key=account.key, api_secret=account.secret, testnet=account.testnet)
-    bm = BinanceSocketManager(client)
-    binance_clients[account.name] = client
-    binance_managers[account.name] = bm
-    return bm
+    try:
+        client = await AsyncClient.create(api_key=account.key, api_secret=account.secret, testnet=account.testnet)
+        await client.get_order(orderId='111111111', symbol='BTCUSDT')
+    except Exception as e:
+        if 'APIError(code=-2026)' in str(e):
+            bm = BinanceSocketManager(client)
+            binance_clients[account.name] = client
+            binance_managers[account.name] = bm
+            return True, ''
+
+        logging.info(f'{account.name} BINANCE CONN ERROR: {e}')
+        await client.close_connection()
+        return False, str(e)
 
 
 async def sub_to_binance_user_topik(account_name):

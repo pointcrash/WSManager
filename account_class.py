@@ -9,6 +9,7 @@ class Account:
         self.key = data['API_TOKEN']
         self.secret = data['SECRET_KEY']
         self.testnet = not data['is_mainnet']
+        self.account_type = data['account_type']
 
     @property
     async def service_name(self):
