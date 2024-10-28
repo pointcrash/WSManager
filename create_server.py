@@ -10,7 +10,6 @@ from format import get_accounts, get_account, format_kline_interval_to_binance
 from global_variables import active_connections, queue_dict, account_names, TASK_DICT, ws_ids
 
 
-
 async def sub_to_kline(acc_name, service, symbol, interval):
     if service == 'ByBit':
         _queue = queue_dict[acc_name]
@@ -241,12 +240,8 @@ async def close_connection(account):
 
 async def ws_conn_check():
     while True:
-        # logging.info(bybit_ws_private)
-        # logging.info(binance_clients)
-        # logging.info('')
         for conn in list(binance_clients.values()):
             ws_id = ws_ids[conn]
-            # logging.info(ws_id)
             try:
                 await conn.get_order(orderId='111111111', symbol='BTCUSDT')
             except Exception as e:
@@ -257,11 +252,9 @@ async def ws_conn_check():
                     await update_wsmanager_status(ws_id, False, error=str(e))
 
         for account in dict(TASK_DICT):
-            # for conn in list(bybit_ws_private.values()):
             conn = bybit_ws_private.get(account.name)
             if conn:
                 ws_id = ws_ids[conn]
-                # logging.info(ws_id)
                 status, err = bybit_api_check(account)
                 if status and conn.is_connected():
                     await update_wsmanager_status(ws_id, True)
