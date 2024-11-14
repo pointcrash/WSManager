@@ -66,5 +66,9 @@ async def reconnect_account_view(acc_pk: int):  # Action update account
 if __name__ == "__main__":
     import uvicorn
 
+    loop = asyncio.get_event_loop()
+    loop.create_task(main())  # Создаем задачу
+    loop.run_forever()  # Запускаем цикл событий
+
     print("Uvicorn awake...")
     uvicorn.run(app, host="0.0.0.0", port=8008)

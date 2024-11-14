@@ -35,7 +35,6 @@ async def sub_to_mark_price(acc_name, service, symbol):
 
 
 async def conn_handler(websocket, path):
-    print("Client connected")
     logging.info("Client connected")
     acc_name = None
     service = None
@@ -45,7 +44,6 @@ async def conn_handler(websocket, path):
     try:
         async for message in websocket:
             message = json.loads(message)
-            print(message)
             if message['title'] == 'conn':
                 acc_name = message['account']
 
@@ -266,7 +264,6 @@ async def ws_conn_check():
 
 async def main():
     if not len(TASK_DICT):
-        logging.basicConfig(level=logging.INFO)
         task_start_server = asyncio.create_task(start_server())
         task_ws_conn_check = asyncio.create_task(ws_conn_check())
 
@@ -278,7 +275,7 @@ async def main():
 
         for account in accounts.values():
             await new_connect(account)
-            await asyncio.sleep(1)
+            # await asyncio.sleep(1)
 
         await asyncio.gather(task_start_server, task_ws_conn_check)
 
