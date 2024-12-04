@@ -95,7 +95,7 @@ async def conn_handler(websocket, path):
 
 async def binance_sender(acc_id, acc_name, _queue):
     try:
-        # print(f"Sender '{acc_name}' started")
+        print(f"Sender '{acc_name}' started")
         logging.info(f"Sender '{acc_name}' started")
         while True:
             data = await _queue.get()
@@ -115,7 +115,7 @@ async def binance_sender(acc_id, acc_name, _queue):
 
 async def bybit_sender(acc_id, acc_name, _queue):
     try:
-        # print(f"Sender '{acc_name}' started")
+        print(f"Sender '{acc_name}' started")
         logging.info(f"Sender '{acc_name}' started")
         while True:
             if _queue.qsize() > 0:
@@ -138,7 +138,7 @@ async def bybit_sender(acc_id, acc_name, _queue):
 
 async def bybit_mark_price_sender(acc_name, _queue):
     try:
-        # print(f"Sender '{acc_name}' started")
+        print(f"Sender '{acc_name}' started")
         logging.info(f"Sender '{acc_name}' started")
         while True:
             if _queue.qsize() > 0:
@@ -266,10 +266,6 @@ async def main():
     if not len(TASK_DICT):
         task_start_server = asyncio.create_task(start_server())
         task_ws_conn_check = asyncio.create_task(ws_conn_check())
-
-        # Запуск бесконечных функций
-        # task_start_server = start_server()
-        # task_ws_conn_check = ws_conn_check()
 
         accounts = await get_accounts()
 
