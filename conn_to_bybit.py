@@ -18,6 +18,7 @@ from global_variables import bybit_ws_private, bybit_ws_public, queue_dict
 def get_session(account):
     session = HTTP(
         testnet=account.testnet,
+        demo=account.demo_net,
         api_key=account.key,
         api_secret=account.secret,
     )
