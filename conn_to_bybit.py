@@ -93,7 +93,8 @@ def conn_to_bybit_private(account):
         session.get_wallet_balance(accountType=account.account_type)
         ws_private = WebSocket(
             # trace_logging=True,
-            testnet=account.testnet,
+            testnet=False,
+            demo=account.testnet,
             channel_type="private",
             api_key=account.key,
             api_secret=account.secret,
