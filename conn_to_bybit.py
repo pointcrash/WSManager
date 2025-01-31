@@ -16,6 +16,8 @@ from global_variables import bybit_ws_private, bybit_ws_public, queue_dict
 
 
 def get_session(account):
+    print(f"From get_session account data: {account} ")
+
     session = HTTP(
         testnet=False,
         demo=account.testnet,
