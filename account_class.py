@@ -9,6 +9,7 @@ class Account:
         self.key = data['API_TOKEN']
         self.secret = data['SECRET_KEY']
         self.testnet = not data['is_mainnet']
+        # self.demo_net = data['is_demonet']
         self.account_type = data['account_type']
 
     @property

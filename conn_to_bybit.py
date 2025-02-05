@@ -17,7 +17,8 @@ from global_variables import bybit_ws_private, bybit_ws_public, queue_dict
 
 def get_session(account):
     session = HTTP(
-        testnet=account.testnet,
+        testnet=False,
+        demo=account.testnet,
         api_key=account.key,
         api_secret=account.secret,
     )
@@ -37,7 +38,8 @@ def bybit_api_check(account):
 def conn_to_bybit_public(account):
     ws_public = ByBitCustomWebSocket(
         # trace_logging=True,
-        testnet=account.testnet,
+        testnet=False,
+        demo=False,
         channel_type="linear",
     )
 
@@ -91,7 +93,8 @@ def conn_to_bybit_private(account):
         session.get_wallet_balance(accountType=account.account_type)
         ws_private = WebSocket(
             # trace_logging=True,
-            testnet=account.testnet,
+            testnet=False,
+            demo=account.testnet,
             channel_type="private",
             api_key=account.key,
             api_secret=account.secret,
