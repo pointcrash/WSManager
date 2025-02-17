@@ -7,7 +7,7 @@ RUN pip install -r requirements.txt
 
 COPY ./WSManager/ /WSManager/app
 
-CMD ["python", "main.py"]
+CMD ["python", "-u", "main.py"]
 
 # Устанавливаем скрипт запуска как ENTRYPOINT
 #ENTRYPOINT ["/WSManager/app/main.py"]

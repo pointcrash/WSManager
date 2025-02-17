@@ -2,7 +2,7 @@ import asyncio
 
 from account_class import Account
 from db import fetch_accounts
-from global_variables import accounts_names, bybit_interval_list, binance_interval_list
+from global_variables import account_names, bybit_interval_list, binance_interval_list
 
 
 async def get_account(pk):
@@ -13,7 +13,7 @@ async def get_accounts():
     accounts = await fetch_accounts()
     formatted_data = dict()
     for account in accounts:
-        accounts_names.append(account['name'])
+        account_names.append(account['name'])
         formatted_data[account['name']] = Account(account)
     return formatted_data
 
@@ -45,10 +45,14 @@ def format_binance_order_message(msg):
     formatted_message = {
         'topic': 'order',
         'symbol': msg['s'],
-        'orderId': msg['c'],
+        'orderId': msg['i'],
+        'clientOrderId': msg['c'],
         'side': msg['S'],
         'qty': msg['q'],
+        'price': msg['p'],
         'avgPrice': msg['ap'],
+        'triggerPrice': msg['sp'],
+        'triggerDirection': msg['ot'],
         'status': msg['X'],
         'psnSide': msg['ps'],
         'reduceOnly': msg['R'],
@@ -64,8 +68,20 @@ def format_bybit_position_message(msg):
         'entryPrice': msg['entryPrice'],
         'unrealisedPnl': msg['unrealisedPnl'],
         'realisedPnl': msg['curRealisedPnl'],
-        'side': 'LONG' if msg['side'] == 'Buy' else 'SHORT',
     }
+
+    # if msg['side'] == 'Buy':
+    #     formatted_message['side'] = 'LONG'
+    # elif msg['side'] == 'Sell':
+    #     formatted_message['side'] = 'SHORT'
+
+    if msg['positionIdx'] == 1:
+        formatted_message['side'] = 'LONG'
+    elif msg['positionIdx'] == 2:
+        formatted_message['side'] = 'SHORT'
+    else:
+        formatted_message['side'] = ''
+
     return formatted_message
 
 
@@ -74,10 +90,14 @@ def format_bybit_order_message(msg):
         'topic': 'order',
         'symbol': msg['symbol'],
         'orderId': msg['orderId'],
+        'clientOrderId': msg['orderLinkId'],
         'side': msg['side'].upper(),
         'qty': msg['qty'],
-        'avgPrice': msg['price'],
-        'status': msg['orderStatus'],
+        'price': msg['price'],
+        'avgPrice': msg['avgPrice'],
+        'triggerPrice': msg['triggerPrice'],
+        'triggerDirection': msg['triggerDirection'],
+        'status': msg['orderStatus'].upper(),
         'psnSide': 'LONG' if msg['positionIdx'] == 1 else 'SHORT',
         'reduceOnly': msg['reduceOnly'],
     }

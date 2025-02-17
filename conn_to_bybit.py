@@ -1,9 +1,11 @@
 import json
+import logging
+import threading
 import time
 from uuid import uuid4
+from pybit.unified_trading import WebSocket, HTTP
 
-from pybit.unified_trading import WebSocket
-
+from bybit_custom_ws_class import ByBitCustomWebSocket
 from format import format_bybit_order_message, format_bybit_position_message
 from global_variables import bybit_ws_private, bybit_ws_public, queue_dict
 
@@ -13,15 +15,35 @@ from global_variables import bybit_ws_private, bybit_ws_public, queue_dict
 # symbol = 'BTCUSDT'
 
 
-def conn_to_bybit_public():
-    if not len(bybit_ws_public):
-        ws_public = WebSocket(
-            # trace_logging=True,
-            testnet=True,
-            channel_type="linear",
-        )
+def get_session(account):
+    session = HTTP(
+        testnet=False,
+        demo=account.testnet,
+        api_key=account.key,
+        api_secret=account.secret,
+    )
 
-        bybit_ws_public.append(ws_public)
+    return session
+
+
+def bybit_api_check(account):
+    try:
+        session = get_session(account)
+        session.get_wallet_balance(accountType=account.account_type)
+        return True, ''
+    except Exception as e:
+        return False, str(e)
+
+
+def conn_to_bybit_public(account):
+    ws_public = ByBitCustomWebSocket(
+        # trace_logging=True,
+        testnet=False,
+        demo=False,
+        channel_type="linear",
+    )
+
+    bybit_ws_public[account.name] = ws_public
 
 
 def position_handler_wrapper(_queue):
@@ -66,42 +88,48 @@ def kline_handler_wrapper(_queue, symbol):
 
 
 def conn_to_bybit_private(account):
-    ws_private = WebSocket(
-        # trace_logging=True,
-        testnet=account.testnet,
-        channel_type="private",
-        api_key=account.key,
-        api_secret=account.secret,
-    )
+    try:
+        session = get_session(account)
+        session.get_wallet_balance(accountType=account.account_type)
+        ws_private = WebSocket(
+            # trace_logging=True,
+            testnet=False,
+            demo=account.testnet,
+            channel_type="private",
+            api_key=account.key,
+            api_secret=account.secret,
+        )
 
-    if ws_private.is_connected():
-        print(f"WebSocket '{account.name}' connected")
-    else:
-        print(f"WebSocket '{account.name}' connection error")
+        if ws_private.is_connected():
+            bybit_ws_private[account.name] = ws_private
+            return True, ''
+        else:
+            return False, 'Not connected'
+    except Exception as e:
+        logging.info(f'{account.name} BYBIT CONN ERROR: {e}')
+        return False, str(e)
 
-    bybit_ws_private[account.name] = ws_private
 
-
-def unsub_from_topic(splitted_topic):
+def unsub_from_topic(account_name, splitted_topic):
     topic = '.'.join(splitted_topic)
-    ws_public = bybit_ws_public[0]
+    ws_public = bybit_ws_public[account_name]
 
     for req_id, data in list(ws_public.subscriptions.items()):
         data = json.loads(data)
         if data['args'][0] == topic:
             # req_id = str(uuid4())
-            ws_public.unsub_topics[req_id] = topic
+            ws_public.unsubscribe_topics[req_id] = topic
             unsubscribe_message = {"op": "unsubscribe", "req_id": req_id, "args": [topic]}
             ws_public.ws.send(json.dumps(unsubscribe_message))
 
 
-def bybit_sub_to_mp(symbol, _queue):
-    ws_public = bybit_ws_public[0]
+def bybit_sub_to_mp(account_name, symbol, _queue):
+    ws_public = bybit_ws_public[account_name]
     ws_public.ticker_stream(symbol=symbol, callback=mark_price_handler_wrapper(_queue, symbol))
 
 
-def bybit_sub_to_kline(interval, symbol, _queue):
-    ws_public = bybit_ws_public[0]
+def bybit_sub_to_kline(account_name, interval, symbol, _queue):
+    ws_public = bybit_ws_public[account_name]
     ws_public.kline_stream(interval=interval, symbol=symbol, callback=kline_handler_wrapper(_queue, symbol))
 
 
